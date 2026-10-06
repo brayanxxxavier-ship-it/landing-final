@@ -86,22 +86,22 @@ export const Hero: React.FC<HeroProps> = ({
             {t('hero.description', lang)}
           </p>
 
-          <div className="hero__actions flex flex-col sm:flex-row w-full sm:w-auto items-center justify-center gap-3 mx-auto mt-5 sm:mt-6">
+          <div className="hero__actions justify-center mx-auto mt-6">
             <button
               type="button"
               onClick={onPreorderClick}
-              className="btn btn--primary w-full sm:w-auto px-6 sm:px-8 py-3 text-sm shadow-glow cursor-pointer"
+              className="btn btn--primary px-8 py-3 text-sm shadow-glow cursor-pointer"
             >
               {t('hero.cta', lang)}
             </button>
-            <a className="btn btn--secondary w-full sm:w-auto px-6 sm:px-8 py-3 text-sm" href="#catalogue">
+            <a className="btn btn--secondary px-8 py-3 text-sm" href="#catalogue">
               {t('hero.ctaSecondary', lang)}
             </a>
           </div>
         </div>
 
-        {/* Center: 3D Car Piece - Responsive height across mobile, tablet, desktop */}
-        <div className="hero__car-showcase w-full max-w-5xl xl:max-w-6xl mx-auto my-4 sm:my-8 relative flex flex-col items-center">
+        {/* Center: 3D Car Piece - Located right underneath the preorder buttons and above stats */}
+        <div className="hero__car-showcase w-full max-w-5xl xl:max-w-6xl mx-auto my-6 sm:my-8 relative flex flex-col items-center">
           {/* Subtle Ambient Radial Glow backdrop */}
           <div
             className="absolute inset-0 pointer-events-none -z-10 opacity-70 blur-3xl"
@@ -115,50 +115,50 @@ export const Hero: React.FC<HeroProps> = ({
           />
 
           {/* Model Specification Pill */}
-          <div className="mb-2 sm:mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card)/0.8)] backdrop-blur-md text-[hsl(var(--muted-foreground))] text-[10px] sm:text-xs font-mono tracking-wider uppercase shadow-xs max-w-full">
-            <span className="w-2 h-2 rounded-full bg-[hsl(var(--primary))] animate-pulse shrink-0" />
-            <span className="truncate">Lamborghini Aventador SVJ · 770 CV · V12</span>
+          <div className="mb-3 inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card)/0.8)] backdrop-blur-md text-[hsl(var(--muted-foreground))] text-xs font-mono tracking-wider uppercase shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-[hsl(var(--primary))] animate-pulse" />
+            <span>Lamborghini Aventador SVJ · 770 CV · V12</span>
           </div>
 
-          {/* 3D Canvas Container - Centered, proportional scale */}
-          <div className="w-full h-[270px] xs:h-[330px] sm:h-[440px] md:h-[520px] lg:h-[600px] xl:h-[640px] relative rounded-xl sm:rounded-2xl overflow-hidden shadow-md border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--card))]">
+          {/* 3D Canvas Container - Centered, enlarged, full presence */}
+          <div className="w-full h-[420px] sm:h-[500px] md:h-[560px] lg:h-[620px] xl:h-[660px] relative rounded-2xl overflow-hidden shadow-md border border-[hsl(var(--border)/0.7)] bg-[hsl(var(--card))]">
             <AventadorParticle3D theme={theme} lang={lang} />
           </div>
 
           {/* Helper hint */}
-          <p className="mt-2 text-[10px] sm:text-xs font-mono text-[hsl(var(--muted-foreground))] text-center tracking-wide px-2">
+          <p className="mt-2 text-xs font-mono text-[hsl(var(--muted-foreground))] text-center tracking-wide">
             {lang === 'es'
-              ? '✦ Toca dos veces o haz doble clic para activar la órbita 3D · El scroll permanece libre'
-              : '✦ Double-tap or double-click to activate 3D orbit · Scroll remains free'}
+              ? '✦ Haz doble clic o toca dos veces para activar la órbita 3D · El scroll de página permanece libre'
+              : '✦ Double-click or double-tap to activate 3D orbit · Page scroll remains free'}
           </p>
         </div>
 
         {/* Bottom: Hero Stats (Units, Published, Response Time) */}
-        <dl className="hero__stats w-full max-w-3xl mx-auto grid grid-cols-3 gap-1.5 xs:gap-3 sm:gap-6 pt-3.5 sm:pt-6 border-t border-[hsl(var(--border))] text-center">
+        <dl className="hero__stats w-full max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-[hsl(var(--border))] text-center">
           <div className="stat flex flex-col items-center">
-            <dt className="stat__label flex items-center justify-center gap-1 text-[10px] sm:text-xs">
-              <Sparkles className="w-3 h-3 text-[hsl(var(--primary))] shrink-0" />
-              <span>{t('hero.statUnits.label', lang)}</span>
+            <dt className="stat__label flex items-center justify-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+              {t('hero.statUnits.label', lang)}
             </dt>
-            <dd className="stat__value text-lg xs:text-xl sm:text-3xl font-bold font-mono text-[hsl(var(--foreground))] mt-0.5">
+            <dd className="stat__value text-2xl sm:text-3xl font-bold font-mono text-[hsl(var(--foreground))]">
               12
             </dd>
           </div>
           <div className="stat flex flex-col items-center">
-            <dt className="stat__label flex items-center justify-center gap-1 text-[10px] sm:text-xs">
-              <ShieldCheck className="w-3 h-3 text-[hsl(var(--primary))] shrink-0" />
-              <span>{t('hero.statPublished.label', lang)}</span>
+            <dt className="stat__label flex items-center justify-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+              {t('hero.statPublished.label', lang)}
             </dt>
-            <dd className="stat__value text-lg xs:text-xl sm:text-3xl font-bold font-mono text-[hsl(var(--primary))] mt-0.5">
+            <dd className="stat__value text-2xl sm:text-3xl font-bold font-mono text-[hsl(var(--primary))]">
               {publishedCount}
             </dd>
           </div>
           <div className="stat flex flex-col items-center">
-            <dt className="stat__label flex items-center justify-center gap-1 text-[10px] sm:text-xs">
-              <Clock className="w-3 h-3 text-[hsl(var(--primary))] shrink-0" />
-              <span>{t('hero.statEmail.label', lang)}</span>
+            <dt className="stat__label flex items-center justify-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+              {t('hero.statEmail.label', lang)}
             </dt>
-            <dd className="stat__value text-lg xs:text-xl sm:text-3xl font-bold font-mono text-[hsl(var(--foreground))] mt-0.5">
+            <dd className="stat__value text-2xl sm:text-3xl font-bold font-mono text-[hsl(var(--foreground))]">
               {t('hero.statEmail.value', lang)}
             </dd>
           </div>

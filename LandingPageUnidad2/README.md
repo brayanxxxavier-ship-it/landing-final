@@ -50,42 +50,27 @@ A continuación se documentan de forma simple y numerada los prompts aplicados d
 
 ---
 
-## 2. Variables de Entorno y Claves de API (`.env`)
 
-Crea un archivo `.env` en la raíz del proyecto tomando como plantilla `.env.example`:
 
-```env
-# 1. Supabase (Base de datos PostgreSQL remota, Auth y RLS)
-# Obtén estos valores en tu consola de Supabase: Project Settings -> API
-# La seguridad y autorización se gestiona exclusivamente vía Supabase Auth y RLS.
-# NUNCA expongas service_role keys ni contraseñas administrativas.
-VITE_SUPABASE_URL="https://tu-proyecto-id.supabase.co"
-VITE_SUPABASE_ANON_KEY="tu_clave_publica_anon_de_supabase"
 
-# 2. Servidor y Entorno
-PORT=3000
-NODE_ENV="development"
-APP_URL="http://localhost:3000"
 ```
+
+> **Nota:** La aplicación incluye almacenamiento persistente local en disco (`./data/`) para que funcione de forma autónoma aun antes de enlazar las credenciales remotas de Supabase.
 
 ---
 
 ## 3. Cómo Acceder al Panel de Administración
 
-El panel administrativo permite visualizar estadísticas de demanda en tiempo real, gestionar unidades del catálogo de preventa, anexar fotografías y auditar solicitudes y PQRS radicadas.
+El panel administrativo permite visualizar estadísticas de peticiones en tiempo real, gestionar qué autos están disponibles para preventa, anexar nuevas imágenes y consultar las órdenes radicadas.
 
 Existen 3 formas de acceder:
 1. **Acceso directo por URL:** Añade el hash `#admin` en el navegador (ejemplo: `http://localhost:3000/#admin`).
 2. **Acceso por Header:** Haz clic en el icono de candado/escudo situado en la barra de herramientas superior (junto al botón de tema claro/oscuro).
 3. **Acceso por Footer:** Haz clic en el enlace *"Panel de Administración"* o *"Acceso Admin"* en el pie de página.
 
-### Autenticación y Autorización Administrativa:
-* **Autenticación Oficial:** El acceso requiere un usuario real registrado y activo en **Supabase Auth** (`Authentication -> Users`).
-* **Control de Acceso Basado en Roles (RBAC):** La cuenta debe contar con un registro activo en la tabla `public.admin_profiles` con rol `admin` o `editor` (`is_active = true`), protegido por **Row Level Security (RLS)**.
-* **Alta de Administrador:** En el SQL Editor de Supabase, ejecuta:
-  ```sql
-  select public.register_admin_user('tu_correo_admin@dominio.com', 'admin');
-  ```
+### Credenciales de Acceso:
+* **Usuario / Correo:** `admin@luxurygalaxy.com` (o el correo de tu usuario registrado en **Supabase Auth**).
+* **Contraseña:** `GalaxyAdmin2026!` (o la contraseña de tu usuario en Supabase Auth o variable `ADMIN_PASSWORD` en `.env`).
 
 ---
 

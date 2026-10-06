@@ -74,8 +74,7 @@ export default function App() {
       const { data, error } = await supabase
         .from('vehicles')
         .select('*')
-        .eq('is_public', true)
-        .order('display_order', { ascending: true });
+        .eq('is_public', true);
 
       if (!error && Array.isArray(data) && data.length > 0) {
         const mapped: Vehicle[] = data.map((v: any, index: number) => ({

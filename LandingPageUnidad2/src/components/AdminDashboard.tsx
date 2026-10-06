@@ -109,97 +109,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const json = await res.json();
         if (json.ok) setStatsData(json.stats);
       } else if (activeTab === 'vehicles') {
-        // 1. Direct Supabase read
-        let loadedFromDb = false;
-        try {
-          const { data: sbVehicles, error: sbVErr } = await supabase
-            .from('vehicles')
-            .select('*')
-            .order('display_order', { ascending: true });
-
-          if (!sbVErr && Array.isArray(sbVehicles) && sbVehicles.length > 0) {
-            const mapped: Vehicle[] = sbVehicles.map((v: any, index: number) => ({
-              id: v.id,
-              internal_code: v.internal_id || `LG-EX-0${index + 1}`,
-              name: v.name,
-              description: v.description,
-              image_url: v.image_url || '',
-              price_cop: Number(v.price_cop) || 0,
-              price_usd: Number(v.price_usd) || 0,
-              status: v.status === 'agotado' ? 'sold' : v.status === 'consulta' ? 'reserved' : 'available',
-              display_order: v.display_order ?? index + 1,
-              is_public: v.is_public ?? true,
-            }));
-            setVehicles(mapped);
-            loadedFromDb = true;
-          }
-        } catch {}
-
-        if (!loadedFromDb) {
-          const res = await fetch('/api/admin/vehicles', { headers });
-          const json = await res.json();
-          if (json.ok && Array.isArray(json.data)) setVehicles(json.data);
-        }
+        const res = await fetch('/api/admin/vehicles', { headers });
+        const json = await res.json();
+        if (json.ok) setVehicles(json.data);
       } else if (activeTab === 'preorders') {
-        let loadedFromDb = false;
-        try {
-          const { data: sbPreorders, error: sbPErr } = await supabase
-            .from('preorders')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-          if (!sbPErr && Array.isArray(sbPreorders)) {
-            const mapped = sbPreorders.map((p: any) => ({
-              id: p.id,
-              trackingCode: p.tracking_code,
-              fullName: p.full_name,
-              email: p.email,
-              phone: p.phone,
-              vehicleIds: p.selected_vehicle_ids,
-              vehicleNames: p.selected_vehicle_ids,
-              createdAt: p.created_at,
-            }));
-            setPreorders(mapped);
-            loadedFromDb = true;
-          }
-        } catch {}
-
-        if (!loadedFromDb) {
-          const res = await fetch('/api/admin/preorders', { headers });
-          const json = await res.json();
-          if (json.ok) setPreorders(json.data);
-        }
+        const res = await fetch('/api/admin/preorders', { headers });
+        const json = await res.json();
+        if (json.ok) setPreorders(json.data);
       } else if (activeTab === 'pqrs') {
-        let loadedFromDb = false;
-        try {
-          const { data: sbPqrs, error: sbQErr } = await supabase
-            .from('pqrs')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-          if (!sbQErr && Array.isArray(sbPqrs)) {
-            const mapped = sbPqrs.map((q: any) => ({
-              id: q.id,
-              trackingCode: q.tracking_code,
-              requestType: q.type,
-              fullName: q.full_name,
-              email: q.email,
-              phone: q.phone,
-              subject: q.subject || 'PQRS',
-              message: q.message,
-              status: q.status,
-              createdAt: q.created_at,
-            }));
-            setPqrsList(mapped);
-            loadedFromDb = true;
-          }
-        } catch {}
-
-        if (!loadedFromDb) {
-          const res = await fetch('/api/admin/pqrs', { headers });
-          const json = await res.json();
-          if (json.ok) setPqrsList(json.data);
-        }
+        const res = await fetch('/api/admin/pqrs', { headers });
+        const json = await res.json();
+        if (json.ok) setPqrsList(json.data);
       }
     } catch (err) {
       console.error('[Admin] Load data error:', err);
@@ -223,52 +143,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     try {
-      // 1. AUTENTICACIÓN OFICIAL EN SUPABASE AUTH:
-      const { data: sbData, error: sbError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: cleanPassword,
-      });
+      // 1. Intentar autenticación con Supabase Auth si está configurado
+      let supabaseToken = '';
+      let supabaseEmail = '';
 
-      if (sbError || !sbData?.session || !sbData?.user) {
-        if (sbError?.message?.toLowerCase().includes('email not confirmed')) {
-          setAuthError('Acceso denegado: El correo electrónico de este administrador no ha sido confirmado en Supabase Auth.');
-        } else if (sbError?.message?.toLowerCase().includes('invalid login credentials')) {
-          setAuthError('Acceso denegado: Credenciales incorrectas. Verifica tu correo y contraseña registrados en Supabase.');
-        } else {
-          setAuthError(`Acceso denegado: ${sbError?.message || 'Usuario no válido en Supabase Auth.'}`);
-        }
-        setIsSubmittingAuth(false);
-        return;
-      }
-
-      // 2. VERIFICACIÓN ESTRICTA DE ROL EN admin_profiles (Zero auto-promotion, RLS backed)
-      let userRole = 'admin';
       try {
-        const { data: profile, error: profErr } = await supabase
-          .from('admin_profiles')
-          .select('user_id, email, role, is_active')
-          .eq('user_id', sbData.user.id)
-          .maybeSingle();
+        const { data: sbData, error: sbError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPassword,
+        });
 
-        if (profErr || !profile || !profile.is_active || (profile.role !== 'admin' && profile.role !== 'editor')) {
-          await supabase.auth.signOut();
-          setAuthError('Acceso denegado: La cuenta existe pero no cuenta con privilegios administrativos activos asignados en admin_profiles.');
-          setIsSubmittingAuth(false);
-          return;
+        if (!sbError && sbData?.session) {
+          supabaseToken = sbData.session.access_token;
+          supabaseEmail = sbData.user?.email || cleanEmail;
         }
-
-        userRole = profile.role;
-      } catch (checkErr) {
-        console.warn('[Admin] Verificación en admin_profiles:', checkErr);
+      } catch (err) {
+        console.warn('[Admin Auth] Supabase client check notice:', err);
       }
 
-      // 3. Obtener sesión validada en backend enviando el JWT de Supabase
+      // 2. Enviar credenciales (y token de Supabase si se obtuvo) al backend para sesión segura
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: sbData.user.email || cleanEmail,
-          supabaseToken: sbData.session.access_token,
+          email: cleanEmail,
+          password: cleanPassword,
+          supabaseToken,
         }),
       });
       const data = await res.json();
@@ -276,10 +176,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (res.ok && data.ok) {
         setToken(data.token);
         const loggedUser = {
-          email: sbData.user.email || cleanEmail,
-          name: (sbData.user.email || cleanEmail).split('@')[0],
-          role: userRole,
-          supabaseId: sbData.user.id,
+          email: supabaseEmail || data.user?.email || cleanEmail,
+          name: data.user?.name || cleanEmail.split('@')[0],
+          role: data.user?.role || 'admin',
         };
         setAdminUser(loggedUser);
 
@@ -291,10 +190,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setPassword('');
         loadData();
       } else {
-        setAuthError(data.error || 'Acceso denegado por el servidor.');
+        setAuthError(data.error || 'Credenciales inválidas. Verifica tu correo y contraseña.');
       }
-    } catch (err: any) {
-      setAuthError('Acceso denegado: ' + (err?.message || 'Error de conexión con el servicio de autenticación.'));
+    } catch {
+      setAuthError('Error de conexión con el servidor. Inténtalo de nuevo.');
     } finally {
       setIsSubmittingAuth(false);
     }
@@ -390,39 +289,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     try {
-      const isExisting = editingVehicle.id && !editingVehicle.id.startsWith('new_');
-
-      // 1. Direct Supabase PostgreSQL mutation (Authenticated with RLS)
-      try {
-        const dbPayload = {
-          name: editingVehicle.name?.trim(),
-          description: editingVehicle.description?.trim(),
-          internal_id: editingVehicle.internal_code?.trim().toUpperCase(),
-          price_cop: Number(editingVehicle.price_cop) || 0,
-          price_usd: Number(editingVehicle.price_usd) || 0,
-          status: editingVehicle.status === 'available' ? 'consulta' : editingVehicle.status === 'reserved' ? 'preventa' : 'agotado',
-          is_public: editingVehicle.is_public ?? true,
-          image_url: editingVehicle.image_url,
-          updated_at: new Date().toISOString(),
-        };
-
-        if (isExisting) {
-          await supabase.from('vehicles').update(dbPayload).eq('id', editingVehicle.id);
-        } else {
-          await supabase.from('vehicles').insert(dbPayload);
-        }
-      } catch (sbErr) {
-        console.warn('[Admin] Direct DB sync notice:', sbErr);
-      }
-
-      // 2. Synchronize server cache
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       };
 
       let res;
-      if (isExisting) {
+      if (editingVehicle.id && !editingVehicle.id.startsWith('new_')) {
         res = await fetch(`/api/admin/vehicles/${editingVehicle.id}`, {
           method: 'PUT',
           headers,
@@ -456,12 +329,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleDeleteVehicle = async (id: string) => {
     if (!window.confirm('¿Seguro que deseas eliminar este vehículo del catálogo de preventas?')) return;
     try {
-      // 1. Delete from Supabase PostgreSQL
-      try {
-        await supabase.from('vehicles').delete().eq('id', id);
-      } catch {}
-
-      // 2. Delete from server cache
       await fetch(`/api/admin/vehicles/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -616,10 +483,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="p-3 rounded-lg bg-[hsl(var(--muted)/0.3)] border border-[hsl(var(--border))] text-[11px] text-[hsl(var(--muted-foreground))] space-y-1">
                 <p className="flex items-center gap-1.5 font-semibold text-[hsl(var(--foreground))]">
                   <ShieldCheck className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                  Acceso Restringido a Usuarios de Supabase
+                  Autenticación Doble Capa
                 </p>
                 <p>
-                  El sistema verifica directamente contra <strong>Supabase Auth</strong>. Si el usuario no existe en Supabase o las credenciales no coinciden, el acceso será estrictamente bloqueado.
+                  Compatible con usuarios creados en <strong>Supabase Auth</strong> o con credenciales maestras configuradas en el servidor (<code className="text-[hsl(var(--primary))]">admin@luxurygalaxy.com</code>).
                 </p>
               </div>
             </form>
@@ -628,11 +495,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           /* AUTHENTICATED ADMIN DASHBOARD */
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Nav Tabs */}
-            <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] pb-3 mb-4 overflow-x-auto no-scrollbar sm:flex-wrap">
+            <div className="flex flex-wrap items-center gap-2 border-b border-[hsl(var(--border))] pb-3 mb-4">
               <button
                 type="button"
                 onClick={() => setActiveTab('stats')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer ${
                   activeTab === 'stats'
                     ? 'bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.5)]'
                     : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
@@ -645,7 +512,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('vehicles')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer ${
                   activeTab === 'vehicles'
                     ? 'bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.5)]'
                     : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
@@ -658,7 +525,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('preorders')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer ${
                   activeTab === 'preorders'
                     ? 'bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.5)]'
                     : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
@@ -671,7 +538,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('pqrs')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer shrink-0 ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer ${
                   activeTab === 'pqrs'
                     ? 'bg-[hsl(var(--primary)/0.2)] text-[hsl(var(--primary))] border border-[hsl(var(--primary)/0.5)]'
                     : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
@@ -685,7 +552,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 type="button"
                 onClick={loadData}
                 disabled={isLoading}
-                className="ml-auto p-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer shrink-0"
+                className="ml-auto p-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer"
                 title="Actualizar datos"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-[hsl(var(--primary))]' : ''}`} />
@@ -819,8 +686,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </button>
                   </div>
 
-                  <div className="w-full border border-[hsl(var(--border))] rounded-xl overflow-x-auto">
-                    <table className="min-w-[620px] w-full text-left text-xs font-mono">
+                  <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-xs font-mono">
                       <thead className="bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]">
                         <tr>
                           <th className="p-3">Foto</th>
@@ -901,8 +768,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {/* TAB 3: PREORDERS */}
               {activeTab === 'preorders' && (
                 <div className="space-y-4">
-                  <div className="w-full border border-[hsl(var(--border))] rounded-xl overflow-x-auto">
-                    <table className="min-w-[650px] w-full text-left text-xs font-mono">
+                  <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-xs font-mono">
                       <thead className="bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]">
                         <tr>
                           <th className="p-3">Código</th>
@@ -947,8 +814,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               {/* TAB 4: PQRS */}
               {activeTab === 'pqrs' && (
                 <div className="space-y-4">
-                  <div className="w-full border border-[hsl(var(--border))] rounded-xl overflow-x-auto">
-                    <table className="min-w-[680px] w-full text-left text-xs font-mono">
+                  <div className="border border-[hsl(var(--border))] rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-xs font-mono">
                       <thead className="bg-[hsl(var(--muted)/0.5)] border-b border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]">
                         <tr>
                           <th className="p-3">Código</th>
@@ -1160,7 +1027,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[hsl(var(--muted-foreground))] mb-1">Código Interno</label>
                     <input
@@ -1186,7 +1053,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[hsl(var(--muted-foreground))] mb-1">Precio COP ($)</label>
                     <input

@@ -10,15 +10,6 @@ interface PqrsModalProps {
   lang: Language;
 }
 
-function generateSecure6DigitCode(): string {
-  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
-    const array = new Uint32Array(1);
-    window.crypto.getRandomValues(array);
-    return String(100000 + (array[0] % 900000));
-  }
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 export const PqrsModal: React.FC<PqrsModalProps> = ({ isOpen, onClose, lang }) => {
   const [formData, setFormData] = useState<PqrsFormData>({
     requestType: 'petition',
@@ -96,7 +87,7 @@ export const PqrsModal: React.FC<PqrsModalProps> = ({ isOpen, onClose, lang }) =
       });
       const data = await response.json();
 
-      const trackingCode = (response.ok && data.ok) ? data.trackingCode : generateSecure6DigitCode();
+      const trackingCode = (response.ok && data.ok) ? data.trackingCode : String(Math.floor(100000 + Math.random() * 900000));
 
       // Persist in Supabase pqrs table
       try {
@@ -123,7 +114,7 @@ export const PqrsModal: React.FC<PqrsModalProps> = ({ isOpen, onClose, lang }) =
     } catch {
       setResult({
         name: formData.fullName,
-        code: generateSecure6DigitCode(),
+        code: String(Math.floor(100000 + Math.random() * 900000)),
         type: t(`pqrs.type.${formData.requestType}`, lang),
       });
     } finally {

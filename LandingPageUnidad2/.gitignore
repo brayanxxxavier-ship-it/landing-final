@@ -5,9 +5,12 @@ coverage/
 .DS_Store
 *.log
 
-# Entorno y variables secretas
 .env
 .env.local
 .env.*.local
 .env*
 !.env.example
+
+
+*.sql
+!supabase/*.sql
