@@ -1,0 +1,13 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+
+# Entorno y variables secretas
+.env
+.env.local
+.env.*.local
+.env*
+!.env.example
