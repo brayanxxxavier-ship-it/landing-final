@@ -1,4 +1,5 @@
 import { Vehicle } from '../types';
+import { supabase } from '../lib/supabase';
 
 export type { Vehicle };
 
@@ -69,3 +70,37 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     is_public: true,
   }
 ];
+
+// Mapeo seguro de fila de Supabase -> tipo Vehicle
+export const mapSupabaseToVehicle = (v: any, index = 0): Vehicle => ({
+  id: String(v.id),
+  internal_code: v.internal_id || `LG-EX-0${index + 1}`,
+  name: v.name || 'Vehículo sin nombre',
+  description: v.description || '',
+  description_en: v.description_en || v.description || '',
+  image_url: v.image_url || '',
+  price_cop: Number(v.price_cop) || 0,
+  price_usd: Number(v.price_usd) || 0,
+  status: v.status === 'agotado' ? 'sold' : v.status === 'preventa' ? 'reserved' : 'available',
+  display_order: Number(v.display_order) || index + 1,
+  is_public: v.is_public ?? true,
+});
+
+// Función opcional por si la quieres usar en App.tsx
+export const fetchPublicVehicles = async (): Promise<Vehicle[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('is_public', true)
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+    if (!data || data.length === 0) return INITIAL_VEHICLES;
+
+    return data.map((v: any, i: number) => mapSupabaseToVehicle(v, i));
+  } catch (e) {
+    console.warn('[vehicles.ts] Fallback a INITIAL_VEHICLES:', e);
+    return INITIAL_VEHICLES;
+  }
+};
